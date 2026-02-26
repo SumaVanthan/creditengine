@@ -1,0 +1,154 @@
+{
+  "companies": [
+    {
+      "company_id": "demo-lender-001",
+      "company_name": "Demo Lending Corp",
+      "rules": [
+        {
+          "rule_id": "rule-001",
+          "template_id": 1,
+          "rule_name": "Bureau Score >= 700",
+          "operator": ">=",
+          "threshold_value": "700",
+          "pass_outcome": "PASS",
+          "score_weight": 3.0,
+          "score_on_pass": 100,
+          "score_on_fail": 0,
+          "hard_reject": true,
+          "active_flag": true,
+          "effective_from": "2026-01-01"
+        },
+        {
+          "rule_id": "rule-002",
+          "template_id": 3,
+          "rule_name": "No 30+ DPD in Last 12 Months",
+          "operator": "<=",
+          "threshold_value": "0",
+          "pass_outcome": "PASS",
+          "score_weight": 2.5,
+          "score_on_pass": 100,
+          "score_on_fail": 0,
+          "hard_reject": false,
+          "active_flag": true,
+          "effective_from": "2026-01-01"
+        },
+        {
+          "rule_id": "rule-003",
+          "template_id": 9,
+          "rule_name": "No 90+ DPD in Last 12 Months",
+          "operator": "<=",
+          "threshold_value": "0",
+          "pass_outcome": "PASS",
+          "score_weight": 3.0,
+          "score_on_pass": 100,
+          "score_on_fail": 0,
+          "hard_reject": true,
+          "active_flag": true,
+          "effective_from": "2026-01-01"
+        },
+        {
+          "rule_id": "rule-004",
+          "template_id": 37,
+          "rule_name": "Max DPD in Last 12 Months <= 30",
+          "operator": "<=",
+          "threshold_value": "30",
+          "pass_outcome": "PASS",
+          "score_weight": 2.0,
+          "score_on_pass": 100,
+          "score_on_fail": 20,
+          "hard_reject": false,
+          "active_flag": true,
+          "effective_from": "2026-01-01"
+        },
+        {
+          "rule_id": "rule-005",
+          "template_id": 46,
+          "rule_name": "Enquiries in Last 12M <= 5",
+          "operator": "<=",
+          "threshold_value": "5",
+          "pass_outcome": "PASS",
+          "score_weight": 1.5,
+          "score_on_pass": 100,
+          "score_on_fail": 30,
+          "hard_reject": false,
+          "active_flag": true,
+          "effective_from": "2026-01-01"
+        },
+        {
+          "rule_id": "rule-006",
+          "template_id": 69,
+          "rule_name": "No Negative Accounts",
+          "operator": "<=",
+          "threshold_value": "0",
+          "pass_outcome": "PASS",
+          "score_weight": 2.5,
+          "score_on_pass": 100,
+          "score_on_fail": 0,
+          "hard_reject": true,
+          "active_flag": true,
+          "effective_from": "2026-01-01"
+        },
+        {
+          "rule_id": "rule-007",
+          "template_id": 92,
+          "rule_name": "Total Active Loans <= 8",
+          "operator": "<=",
+          "threshold_value": "8",
+          "pass_outcome": "PASS",
+          "score_weight": 1.0,
+          "score_on_pass": 100,
+          "score_on_fail": 40,
+          "hard_reject": false,
+          "active_flag": true,
+          "effective_from": "2026-01-01"
+        },
+        {
+          "rule_id": "rule-008",
+          "template_id": 50,
+          "rule_name": "Total Live Overdue <= 10000",
+          "operator": "<=",
+          "threshold_value": "10000",
+          "pass_outcome": "PASS",
+          "score_weight": 2.0,
+          "score_on_pass": 100,
+          "score_on_fail": 10,
+          "hard_reject": false,
+          "active_flag": true,
+          "effective_from": "2026-01-01"
+        }
+      ],
+      "score_bands": [
+        {
+          "min_score": 80,
+          "max_score": 100,
+          "grade": "A",
+          "label": "Strong profile, recommend approval"
+        },
+        {
+          "min_score": 60,
+          "max_score": 79,
+          "grade": "B",
+          "label": "Good profile, standard approval"
+        },
+        {
+          "min_score": 40,
+          "max_score": 59,
+          "grade": "C",
+          "label": "Moderate risk, manual review required"
+        },
+        {
+          "min_score": 20,
+          "max_score": 39,
+          "grade": "D",
+          "label": "High risk, enhanced due diligence"
+        },
+        {
+          "min_score": 0,
+          "max_score": 19,
+          "grade": "E",
+          "label": "Decline recommended"
+        }
+      ]
+    }
+  ]
+}

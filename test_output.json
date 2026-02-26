@@ -1,0 +1,49 @@
+﻿{
+  "overall_decision": "APPROVED",
+  "summary": {
+    "total_rules": 4,
+    "passed": 2,
+    "failed": 0,
+    "info": 2,
+    "errors": 0
+  },
+  "evaluated_at": "2026-02-26T15:44:06.456855",
+  "rule_results": [
+    {
+      "rule_name": "CIBIL_SCORE_CUTOFF",
+      "rule_type": "numeric_threshold",
+      "description": "Minimum CIBIL Score required for approval.",
+      "status": "PASS",
+      "actual_value": 780,
+      "expected": ">= 750",
+      "details": "Field: score_details.bureau_score"
+    },
+    {
+      "rule_name": "MIN_MONTHLY_INCOME",
+      "rule_type": "numeric_threshold",
+      "description": "Applicant must earn at least 25,000 monthly.",
+      "status": "PASS",
+      "actual_value": 45000.0,
+      "expected": ">= 25000",
+      "details": "Field: personal_details.monthly_income"
+    },
+    {
+      "rule_name": "MAX_DPD_L12M",
+      "rule_type": "max_dpd",
+      "description": "The highest DPD marker seen in the last 12 months.",
+      "status": "INFO",
+      "actual_value": 30,
+      "expected": "Max DPD in last 12 months",
+      "details": "Scanned 2 tradeline(s)"
+    },
+    {
+      "rule_name": "NO_OF_ENQ_1_MON",
+      "rule_type": "enquiry_count",
+      "description": "Total number of hard inquiries in the last 1 month. Should be <= 2.",
+      "status": "INFO",
+      "actual_value": 1,
+      "expected": "Enquiries in last 1 month(s)",
+      "details": "Total enquiries on file: 1"
+    }
+  ]
+}

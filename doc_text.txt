@@ -1,0 +1,94 @@
+[None] LOS Bureau Rules Engine
+[None] Business Engine Platform
+[None] Rules Library, Variable Template & Implementation Plan
+[None] Version 1.0  |  Feb 2026
+[Heading 1] 1. Platform Overview
+[None] The LOS Bureau Rules Engine is a multi-tenant, configurable business decision engine for Loan Origination Systems (LOS). Each lending company can define its own set of credit rules against a shared library of 119 bureau-derived variables. When a bureau report is submitted, the engine computes all applicable variables, evaluates each rule against the configured thresholds, and returns a structured pass/fail result along with a weighted lead score.
+[Heading 2] 1.1 Core Capabilities
+[List Paragraph] Multi-company rule configuration — each company maintains independent rule sets, thresholds, and scoring weights
+[List Paragraph] 119 pre-built bureau derived variable templates covering DPD, Enquiry, Loan Account, Vintage, and Cards
+[List Paragraph] Real-time bureau data processing with repayment history string parsing and DPD algorithm engine
+[List Paragraph] Lead scoring: each rule carries a configurable weight; the engine sums weighted pass scores into a total lead score with grade bands
+[List Paragraph] Audit trail: every evaluation is stored with computed values, thresholds, and timestamps
+[List Paragraph] REST API interface for bureau data ingestion and rule evaluation results
+[Heading 2] 1.2 Variable Groups
+[None] All 119 variables are organized into 5 groups and 2 sections:
+[List Paragraph] Bureau Score (1 variable) — direct score storage from bureau pull
+[List Paragraph] DPD / Tradelines (54 variables) — payment delinquency across time windows, secured/unsecured splits, tradeline-level and percentage metrics
+[List Paragraph] Enquiry (8 variables) — enquiry counts and max enquiry amounts by window and type
+[List Paragraph] Loan Account / Tradelines (51 variables) — overdue amounts, loan counts, sanctioned amounts, write-offs, ratios, vintage
+[List Paragraph] Vintage (2 variables) — MOB of first and latest loan
+[List Paragraph] Cards (1 variable) — credit card utilization
+[Heading 1] 2. Bureau Derived Variable Rules Library
+[None] This section contains the complete catalogue of all 119 bureau-derived variables. Each variable includes the DB column name used as the computed output field, the loan status scope, and the variable group. Companies configure pass/fail thresholds against these computed values in their rule sets.
+[Heading 2] 2.1 Bureau Score
+[Heading 2] 2.2 DPD Variables (54 rules)
+[None] DPD (Days Past Due) variables are computed from the REPAYMENT_HISTORY string using the DPD Logic Algorithm (see Section 4). Variants cover: all loans, secured-only, unsecured-only, specific time windows (3M/6M/12M/18M/24M/history), and threshold levels (>0, >=15, >=30, >=60, >=90 DPD).
+[Heading 2] 2.3 Enquiry Variables (8 rules)
+[Heading 2] 2.4 Loan Account Variables (51 rules)
+[Heading 2] 2.5 Vintage Variables
+[Heading 2] 2.6 Cards Variables
+[Heading 1] 3. Rule Configuration Template
+[None] Each company configures rules by selecting variables from the library above and setting thresholds, operators, and scoring weights. The template below defines the structure of a company rule set.
+[Heading 2] 3.1 Company Rule Configuration Structure
+[Heading 2] 3.2 Lead Score Calculation
+[None] The lead score is computed as a weighted average of all rule outcomes:
+[None] Lead Score = SUM(score_weight x score_on_pass/fail) / SUM(score_weight) x 100
+[None] Grade bands (configurable per company):
+[List Paragraph] 80–100: Grade A — Strong profile, recommend approval
+[List Paragraph] 60–79: Grade B — Good profile, standard approval
+[List Paragraph] 40–59: Grade C — Moderate risk, manual review required
+[List Paragraph] 20–39: Grade D — High risk, enhanced due diligence
+[List Paragraph] 0–19: Grade E — Decline recommended
+[None] Hard reject rules override the score — any single hard reject flag results in immediate decline regardless of the total lead score.
+[Heading 1] 4. DPD Logic Algorithm Reference
+[None] The DPD engine parses the REPAYMENT_HISTORY string from bureau data. The string is structured as sequential 3-character blocks, each representing one month of payment status. The engine trims the string based on the time window relative to BUREAU_PULL_DATE and REPORTED_DATE, then evaluates each block.
+[Heading 2] 4.1 Payment History String Format
+[List Paragraph] Each 3-character block = 1 month of payment history
+[List Paragraph] Blocks are ordered most-recent first (left = most recent)
+[List Paragraph] Special codes: XXX = no record, 000 = current (no DPD), LSS = Loss, DBT = Doubtful, SUB = Substandard, SMA = Special Mention Account
+[List Paragraph] Numeric values: e.g. 030 = 30 DPD, 060 = 60 DPD, 090 = 90 DPD
+[Heading 2] 4.2 Severity Ordering (for MAX DPD)
+[None] LSS  >  DBT  >  SUB  >  SMA  >  999 to 001  >  XXX / 000
+[Heading 2] 4.3 Trimming Formula
+[None] Months to use = Window_Months − diff_months(BUREAU_PULL_DATE, REPORTED_DATE)
+[None] Characters to read = Months_to_use × 3
+[None] Example: Window = 12 months, diff = 3 months → Read 27 chars = 9 blocks = 9 months of history
+[Heading 2] 4.4 Use-Case Reference Table
+[Heading 1] 5. Database Schema Overview
+[None] The platform uses a relational schema that supports multi-tenancy through company-scoped rule configuration and evaluation results. All computed bureau variables and rule outcomes are stored for audit and reporting purposes.
+[Heading 1] 6. API Contract (High-Level)
+[Heading 2] 6.1 Submit Bureau Data for Evaluation
+[Heading 2] 6.2 Manage Company Rules
+[Heading 1] 7. Implementation Plan
+[None] The platform will be delivered in 6 phases over 15 weeks. Each phase produces a working deliverable that can be demonstrated and tested independently.
+[Heading 2] 7.1 Technical Stack Recommendations
+[List Paragraph] Backend API: Node.js / Python (FastAPI) — REST API with JWT auth
+[List Paragraph] Rule Engine: Custom evaluation service with PostgreSQL-backed computed variable store
+[List Paragraph] Database: PostgreSQL 15+ (JSON support for repayment history, date arithmetic functions)
+[List Paragraph] Bureau Parser: Dedicated microservice for repayment string processing (can scale independently)
+[List Paragraph] Frontend (Admin Portal): React + TypeScript — rule configuration UI, company onboarding, evaluation dashboard
+[List Paragraph] Queue: Redis / RabbitMQ — for async batch bureau processing
+[List Paragraph] Cache: Redis — computed variable caching for re-evaluation without re-parsing
+[Heading 2] 7.2 Key Integration Points
+[List Paragraph] Bureau providers (CIBIL, Experian, Equifax, CRIF) — standardize to internal schema via bureau adapter layer
+[List Paragraph] Core LOS system — webhook / API callback with evaluation results after bureau processing
+[List Paragraph] Notification service — alert on hard reject or low score for manual review workflows
+[Heading 2] 7.3 Non-Functional Requirements
+[List Paragraph] Performance: < 2 seconds end-to-end evaluation for a single application with full 119 variables
+[List Paragraph] Scale: Support up to 10,000 evaluations/hour with horizontal scaling of the parser service
+[List Paragraph] Audit: 100% evaluation logging with immutable result storage (append-only audit table)
+[List Paragraph] Security: Company data isolation enforced at row level (RLS) in PostgreSQL; API keys scoped per company
+[List Paragraph] Uptime: 99.9% SLA for evaluation API; maintenance windows during off-peak hours
+[Heading 1] 8. Company Onboarding Checklist
+[None] Use this checklist when onboarding a new lending company to the platform:
+[List Paragraph] Create company record in COMPANIES table with company name, contact, and API key
+[List Paragraph] Load SEC_UNSEC_MASTER mapping for the company's loan product types (if custom codes used)
+[List Paragraph] Configure company rules: for each applicable variable template, set operator, threshold, weight, and hard_reject flag
+[List Paragraph] Set up lead score grade bands in COMPANY_SCORE_BANDS table
+[List Paragraph] Provide API credentials and integration guide to the company's technical team
+[List Paragraph] Run test evaluation using sample bureau XML / JSON payload — verify all 119 computed variables
+[List Paragraph] Validate rule evaluation results match expected pass/fail outcomes from the company's test cases
+[List Paragraph] Enable production flag and monitor first 100 live evaluations
+[None] Document maintained by: Platform Engineering Team
+[None] Last Updated: February 2026  |  Version 1.0
