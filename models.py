@@ -1,16 +1,12 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from datetime import datetime, date
 from typing import List, Optional
 from enum import Enum
-import re
 
 # ============================================================
 # LOS Bureau Rules Engine - Pydantic Models
 # Matches the specification in LOS_Bureau_Rules_Engine.docx
 # ============================================================
-
-# Regex for valid repayment history: 3-char blocks of digits or known alpha codes
-_RH_PATTERN = re.compile(r'^([0-9]{3}|XXX|STD|SMA|SUB|DBT|LSS|NEW|DIS)*$', re.IGNORECASE)
 
 # --- Tradeline Model (LOS_BUREAU_TRADELINES) ---
 class Tradeline(BaseModel):
@@ -20,57 +16,22 @@ class Tradeline(BaseModel):
     repayment_history: str = ""                             # e.g. "000030000000" (3-char blocks)
     reported_date: datetime = Field(default_factory=datetime.now)
     loan_disb_date: Optional[datetime] = None               # Disbursement date
-    loan_disb_amt: Optional[float] = Field(default=None, ge=0)  # Sanctioned / Disbursed amount
-    loan_outstanding_bal: Optional[float] = Field(default=None, ge=0)  # Current outstanding balance
-    loan_overdue_amt: Optional[float] = Field(default=None, ge=0)      # Current overdue amount
-    credit_limit: Optional[float] = Field(default=None, ge=0)          # Credit limit (for cards)
+    loan_disb_amt: Optional[float] = None                   # Sanctioned / Disbursed amount
+    loan_outstanding_bal: Optional[float] = None            # Current outstanding balance
+    loan_overdue_amt: Optional[float] = None                # Current overdue amount
+    credit_limit: Optional[float] = None                    # Credit limit (for cards)
     current_balance: Optional[float] = None                 # Current balance (for cards)
     writeoff_stld_status: Optional[str] = None              # Written-off / Settled / SuitFiled / WilfulDefault
     suitfiled_wilful_dflt: Optional[str] = None             # Suit filed or wilful default marker
-    stlmnt_amt: Optional[float] = Field(default=None, ge=0)            # Settlement amount
-    tot_write_off_amt: Optional[float] = Field(default=None, ge=0)     # Total written off amount
-
-    @field_validator("repayment_history")
-    @classmethod
-    def validate_repayment_history(cls, v: str) -> str:
-        if v and not _RH_PATTERN.match(v):
-            raise ValueError(
-                f"Invalid repayment_history format: '{v}'. "
-                "Must be 3-char blocks of digits (000-999) or "
-                "known codes (XXX, STD, SMA, SUB, DBT, LSS, NEW, DIS)."
-            )
-        return v
-
-    @field_validator("loan_status")
-    @classmethod
-    def validate_loan_status(cls, v: str) -> str:
-        allowed = {"Active", "Closed"}
-        if v not in allowed:
-            raise ValueError(f"loan_status must be one of {allowed}, got '{v}'")
-        return v
-
-    @field_validator("loan_sec_status")
-    @classmethod
-    def validate_loan_sec_status(cls, v: str) -> str:
-        allowed = {"Secured", "Unsecured", "Card"}
-        if v not in allowed:
-            raise ValueError(f"loan_sec_status must be one of {allowed}, got '{v}'")
-        return v
+    stlmnt_amt: Optional[float] = None                      # Settlement amount
+    tot_write_off_amt: Optional[float] = None               # Total written off amount
 
 # --- Enquiry Model (LOS_BUREAU_ENQUIRIES) ---
 class Enquiry(BaseModel):
     loan_enq_date: datetime = Field(default_factory=datetime.now)
     loan_enq_type: str = ""                                  # Loan type code for enquiry
-    loan_enq_amt: Optional[float] = Field(default=None, ge=0)  # Enquiry amount
+    loan_enq_amt: Optional[float] = None                     # Enquiry amount
     loan_sec_status: str = "Unsecured"                       # Secured / Unsecured
-
-    @field_validator("loan_sec_status")
-    @classmethod
-    def validate_enq_sec_status(cls, v: str) -> str:
-        allowed = {"Secured", "Unsecured", "Card"}
-        if v not in allowed:
-            raise ValueError(f"loan_sec_status must be one of {allowed}, got '{v}'")
-        return v
 
 # --- Bureau Data Input Payload (BUREAU_PULL_HEADER + Related) ---
 class BureauData(BaseModel):
@@ -78,7 +39,7 @@ class BureauData(BaseModel):
     company_id: str = "default"
     application_id: str = "app-001"
     bureau_pull_date: datetime = Field(default_factory=datetime.now)
-    bureau_score: Optional[int] = Field(default=None, ge=0, le=999)
+    bureau_score: Optional[int] = None
     tradelines: List[Tradeline] = []
     enquiries: List[Enquiry] = []
 
@@ -118,20 +79,6 @@ class CompanyConfig(BaseModel):
         ScoreBand(min_score=0, max_score=19, grade="E", label="Decline recommended"),
     ]
 
-# --- Variable Template (DYNAMIC RULES) ---
-class VariableTemplate(BaseModel):
-    template_id: int
-    variable_name: str
-    db_column: str
-    logic_type: str
-    group: str
-    section: Optional[str] = "Tradelines"
-    description: Optional[str] = None
-    active: bool = True
-    params: dict = {}
-
 # --- Platform Config (top-level JSON structure) ---
 class PlatformConfig(BaseModel):
     companies: List[CompanyConfig] = []
-    templates: List[VariableTemplate] = []
-

@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from models import BureauData
+from variable_templates import VARIABLE_TEMPLATES, TEMPLATES_BY_ID
 from normalizer import CIBILNormalizer, Applicant
 
 # ============================================================
@@ -29,12 +30,8 @@ class CreditEngine:
         raw_dict = bureau_data.model_dump(mode="json")
         self._applicant = self.normalizer.normalize(raw_dict)
 
-        # Dynamically build template dictionary lookup for this evaluation
-        templates = self.platform_config.get("templates", [])
-        self.templates_by_id = {t.get("template_id"): t for t in templates}
-
-        # Layer 1: Compute all variables (using pre-parsed DPD blocks)
-        computed = self.compute_all_variables(bureau_data, templates)
+        # Layer 1: Compute all 119 variables (using pre-parsed DPD blocks)
+        computed = self.compute_all_variables(bureau_data)
 
         # Layer 2: Evaluate company rules against computed values
         rules = company.get("rules", [])
@@ -70,14 +67,10 @@ class CreditEngine:
             "evaluated_at": datetime.now().isoformat(),
         }
 
-    def compute_all_variables(self, data: BureauData, templates: list) -> dict:
-        """Compute all active bureau-derived variables from raw data."""
+    def compute_all_variables(self, data: BureauData) -> dict:
+        """Compute all 119 bureau-derived variables from raw data."""
         computed = {}
-        for tmpl in templates:
-            # Skip inactive templates completely
-            if not tmpl.get("active", True):
-                continue
-                
+        for tmpl in VARIABLE_TEMPLATES:
             db_col = tmpl["db_column"]
             logic = tmpl["logic_type"]
             try:
@@ -571,7 +564,7 @@ class CreditEngine:
     def _evaluate_single_rule(self, rule: dict, computed: dict) -> dict:
         """Evaluate one company rule against computed variables."""
         template_id = rule.get("template_id")
-        tmpl = self.templates_by_id.get(template_id, {})
+        tmpl = TEMPLATES_BY_ID.get(template_id, {})
         db_column = tmpl.get("db_column", "UNKNOWN")
         computed_value = computed.get(db_column)
         threshold_str = rule.get("threshold_value", "0")

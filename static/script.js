@@ -84,58 +84,23 @@ function renderTemplates(templates) {
         'DPD': 'badge-red',
         'Enquiry': 'badge-blue',
         'Loan Account': 'badge-purple',
-        'Overdue/Negative': 'badge-red',
         'Vintage': 'badge-green',
         'Cards': 'badge-orange',
     };
-
-    function buildDetails(t) {
-        const skipKeys = new Set(['template_id', 'variable_name', 'db_column', 'group', 'status_filter']);
-        const labels = {
-            logic_type: 'Logic Type', sec_filter: 'Security Filter', months_window: 'Months Window',
-            dpd_threshold: 'DPD Threshold', loan_type_filter: 'Loan Type', field: 'Target Field',
-            amt_op: 'Amount Operator', amt_val: 'Amount Value', overdue_min: 'Min Overdue',
-            wo_min: 'Min Write-off', card_only: 'Card Only', exclude_card: 'Exclude Cards',
-        };
-        let rows = '';
-        for (const [key, val] of Object.entries(t)) {
-            if (skipKeys.has(key) || val === undefined || val === null) continue;
-            const label = labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-            const displayVal = typeof val === 'boolean' ? (val ? 'Yes' : 'No') : val;
-            rows += `<div class="detail-item"><span class="detail-key">${label}</span><span class="detail-val">${displayVal}</span></div>`;
-        }
-        return rows;
-    }
-
-    container.innerHTML = templates.map((t, i) => `
-        <div class="template-card" onclick="toggleTemplateDetail(this)" style="cursor:pointer">
+    container.innerHTML = templates.map(t => `
+        <div class="template-card">
             <div class="template-card-top">
                 <span class="badge ${groupColors[t.group] || 'badge-blue'}">${t.group}</span>
-                <div style="display:flex;align-items:center;gap:8px">
-                    <span class="template-id">#${t.template_id}</span>
-                    <span class="expand-arrow">&#9662;</span>
-                </div>
+                <span class="template-id">#${t.template_id}</span>
             </div>
             <div class="template-name">${t.variable_name}</div>
             <div class="template-meta">
                 <span class="template-col">${t.db_column}</span>
-                <span class="template-filter">${t.status_filter || ''}</span>
-            </div>
-            <div class="template-detail">
-                <div class="template-detail-grid">
-                    ${buildDetails(t)}
-                </div>
+                <span class="template-filter">${t.status_filter}</span>
             </div>
         </div>
     `).join('');
 }
-
-function toggleTemplateDetail(card) {
-    const wasOpen = card.classList.contains('expanded');
-    document.querySelectorAll('.template-card.expanded').forEach(c => c.classList.remove('expanded'));
-    if (!wasOpen) card.classList.add('expanded');
-}
-
 
 // ══════════════════════════════════════════════════════════
 // 2. COMPANIES
@@ -246,21 +211,18 @@ function renderRules() {
 function openAddRule() {
     editingRuleIndex = -1;
     document.getElementById('slideover-title').textContent = 'Add Rule';
-    document.getElementById('rf-template-search').value = '';
     populateTemplateDropdown();
     document.getElementById('rule-form').reset();
     document.getElementById('rf-weight').value = '1.0';
     document.getElementById('rf-score-pass').value = '100';
     document.getElementById('rf-score-fail').value = '0';
     document.getElementById('rule-slide-over').classList.add('open');
-    onTemplateSelect();
 }
 
 function editRule(index) {
     editingRuleIndex = index;
     const r = currentCompanyRules[index];
     document.getElementById('slideover-title').textContent = 'Edit Rule';
-    document.getElementById('rf-template-search').value = '';
     populateTemplateDropdown();
     document.getElementById('rf-template').value = r.template_id;
     document.getElementById('rf-name').value = r.rule_name;
@@ -272,7 +234,6 @@ function editRule(index) {
     document.getElementById('rf-score-fail').value = r.score_on_fail;
     document.getElementById('rf-hard-reject').checked = r.hard_reject;
     document.getElementById('rule-slide-over').classList.add('open');
-    onTemplateSelect();
 }
 
 function closeSlideOver() {
@@ -284,60 +245,11 @@ function populateTemplateDropdown() {
     sel.innerHTML = allTemplates.map(t => `<option value="${t.template_id}">[${t.group}] ${t.variable_name} (${t.db_column})</option>`).join('');
 }
 
-function filterTemplateDropdown() {
-    const search = document.getElementById('rf-template-search').value.toLowerCase();
-    const sel = document.getElementById('rf-template');
-    const filtered = allTemplates.filter(t =>
-        t.variable_name.toLowerCase().includes(search) ||
-        t.group.toLowerCase().includes(search) ||
-        t.db_column.toLowerCase().includes(search)
-    );
-    sel.innerHTML = filtered.map(t => `<option value="${t.template_id}">[${t.group}] ${t.variable_name} (${t.db_column})</option>`).join('');
-
-    if (filtered.length > 0) {
-        sel.value = filtered[0].template_id;
-        onTemplateSelect();
-    } else {
-        sel.innerHTML = '<option value="">-- No matches found --</option>';
-        const detailsContainer = document.getElementById('rule-template-details');
-        if (detailsContainer) detailsContainer.style.display = 'none';
-    }
-}
-
 function onTemplateSelect() {
     const tid = parseInt(document.getElementById('rf-template').value);
     const t = allTemplates.find(x => x.template_id === tid);
-    if (!t) return;
-
-    // Auto-fill name if empty
-    if (!document.getElementById('rf-name').value) {
+    if (t && !document.getElementById('rf-name').value) {
         document.getElementById('rf-name').value = t.variable_name;
-    }
-
-    // Show template details in the modal
-    const detailsContainer = document.getElementById('rule-template-details');
-    if (detailsContainer) {
-        const skipKeys = new Set(['template_id', 'variable_name', 'db_column', 'group', 'status_filter']);
-        const labels = {
-            logic_type: 'Logic Type', sec_filter: 'Security', months_window: 'Months Window',
-            dpd_threshold: 'DPD Threshold', loan_type_filter: 'Loan Type', field: 'Target Field',
-            amt_op: 'Amount Operator', amt_val: 'Amount Value', overdue_min: 'Min Overdue',
-            wo_min: 'Min Write-off', card_only: 'Card Only', exclude_card: 'Exclude Cards',
-        };
-        let rows = '';
-        for (const [key, val] of Object.entries(t)) {
-            if (skipKeys.has(key) || val === undefined || val === null) continue;
-            const label = labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-            const displayVal = typeof val === 'boolean' ? (val ? 'Yes' : 'No') : val;
-            rows += `<div class="param-item"><span class="key">${label}</span><span class="val">${displayVal}</span></div>`;
-        }
-
-        if (rows) {
-            detailsContainer.innerHTML = `<div class="rule-params-grid" style="margin-top:8px;background:rgba(255,255,255,0.02)">${rows}</div>`;
-            detailsContainer.style.display = 'block';
-        } else {
-            detailsContainer.style.display = 'none';
-        }
     }
 }
 
